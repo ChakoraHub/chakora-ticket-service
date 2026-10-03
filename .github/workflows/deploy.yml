@@ -20,7 +20,11 @@ jobs:
             git stash --include-untracked
             git pull origin main
             git stash drop || true
+            test -d venv && source venv/bin/activate || true
             test -f requirements.txt && pip install -r requirements.txt || true
-            PYTHON_BIN=$(which python3 || which python)
-            pm2 restart ticket-service --update-env || pm2 start ticket_service.py --name ticket-service --interpreter "$PYTHON_BIN"
+            if pm2 describe ticket-service > /dev/null 2>&1; then
+              pm2 restart ticket-service --update-env
+            else
+              pm2 start "python3 -m uvicorn ticket_service:app --host 0.0.0.0 --port 8025" --name ticket-service
+            fi
             pm2 save
