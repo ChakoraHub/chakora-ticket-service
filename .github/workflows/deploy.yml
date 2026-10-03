@@ -21,4 +21,6 @@ jobs:
             git pull origin main
             git stash drop || true
             test -f requirements.txt && pip install -r requirements.txt || true
-            pm2 restart ticket-service
+            PYTHON_BIN=$(which python3 || which python)
+            pm2 restart ticket-service --update-env || pm2 start ticket_service.py --name ticket-service --interpreter "$PYTHON_BIN"
+            pm2 save
