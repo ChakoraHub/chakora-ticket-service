@@ -21,4 +21,9 @@ jobs:
             git pull origin main
             git stash drop || true
             test -f requirements.txt && pip install -r requirements.txt || true
-            pm2 restart ticket-service
+            if pm2 describe ticket-service > /dev/null 2>&1; then
+              pm2 restart ticket-service --update-env
+            else
+              pm2 start "python3 -m uvicorn ticket_service:app --host 0.0.0.0 --port 8025" --name ticket-service
+            fi
+            pm2 save
