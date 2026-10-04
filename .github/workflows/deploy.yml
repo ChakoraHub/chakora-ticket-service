@@ -18,5 +18,5 @@ jobs:
             cd ${{ secrets.APP_PATH }}
             git pull origin main
             pip install -r requirements.txt
-            pm2 restart ticket-service || pm2 start "uvicorn ticket_service:app --host 0.0.0.0 --port 8025" --name ticket-service
+            pm2 describe ticket-service >/dev/null 2>&1 && pm2 restart ticket-service || pm2 start "uvicorn ticket_service:app --host 0.0.0.0 --port 8025" --name ticket-service
             pm2 save
