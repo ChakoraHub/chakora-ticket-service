@@ -16,15 +16,7 @@ jobs:
           key: ${{ secrets.AWS_PRIVATE_KEY }}
           script: |
             cd ${{ secrets.APP_PATH }}
-            # Safety precaution: Temporarily stash local file touches so pull succeeds cleanly
-            git stash --include-untracked
             git pull origin main
-            git stash drop || true
-            test -d venv && source venv/bin/activate || true
-            test -f requirements.txt && pip install -r requirements.txt || true
-            if pm2 describe ticket-service > /dev/null 2>&1; then
-              pm2 restart ticket-service --update-env
-            else
-              pm2 start "python3 -m uvicorn ticket_service:app --host 0.0.0.0 --port 8025" --name ticket-service
-            fi
+            pip install -r requirements.txt
+            pm2 restart ticket-service || pm2 start "uvicorn ticket_service:app --host 0.0.0.0 --port 8025" --name ticket-service
             pm2 save
