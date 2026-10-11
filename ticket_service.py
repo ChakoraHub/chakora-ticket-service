@@ -1871,6 +1871,78 @@ async def api_rate_ticket(ticket_number: str, rate_req: RateTicketRequest):
 # EXOTEL IVR + TICKET INTEGRATION (TASK 2: Interns / Gayatri)
 # =====================================================
 
+GAYATRI_ASSIGNEE = "Gayatri Alahari"
+
+
+async def _extract_ivr_params(request: Request) -> dict:
+    """Helper to extract parameters across GET, form-data, and JSON requests."""
+    if request.method == "GET":
+        return dict(request.query_params)
+    try:
+        form = await request.form()
+        return dict(form)
+    except Exception:
+        pass
+    try:
+        return await request.json()
+    except Exception:
+        return dict(request.query_params)
+
+
+def _normalize_caller_phone(caller: str) -> str:
+    """Normalize caller phone string into standardized country code format."""
+    clean_phone = re.sub(r"\D", "", caller)
+    if clean_phone.startswith("0") and len(clean_phone) == 11:
+        return f"91{clean_phone[1:]}"
+    if len(clean_phone) == 10:
+        return f"91{clean_phone}"
+    return clean_phone
+
+
+def _assign_ticket_to_staff(ticket_id: str, assignee: str) -> None:
+    """Assign ticket to designated staff member in database."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE SUPPORT_TICKETS SET ASSIGNED_TO = :1, UPDATED_AT = SYSDATE WHERE TICKET_ID = :2",
+            [assignee, ticket_id]
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+        logger.info(f"✅ Auto-assigned IVR Ticket {ticket_id} to {assignee} (Interns Desk)")
+    except Exception as e:
+        logger.warning(f"Could not update assigned_to for {ticket_id}: {e}")
+
+
+def _find_latest_ticket_by_phone(caller: str) -> Optional[dict]:
+    """Lookup most recent support ticket associated with caller phone number."""
+    clean_phone = _normalize_caller_phone(caller)
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT TICKET_ID, STATUS, CATEGORY, TITLE
+            FROM SUPPORT_TICKETS
+            WHERE USER_ID LIKE :1
+            ORDER BY CREATED_AT DESC
+        """, [f"%{clean_phone}%"])
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if row:
+            return {
+                "ticket_number": row[0],
+                "status": row[1],
+                "category": row[2],
+                "subject": row[3]
+            }
+    except Exception as e:
+        logger.warning(f"Error querying ticket by phone: {e}")
+    return None
+
+
 @app.api_route("/api/ticket/ivr/create", methods=["GET", "POST"])
 @app.api_route("/api/ivr/ticket/create", methods=["GET", "POST"])
 @app.api_route("/exotel/ticket/create", methods=["GET", "POST"])
@@ -1879,34 +1951,17 @@ async def exotel_ivr_create_ticket(request: Request, background_tasks: Backgroun
     Exotel Passthrough Applet Webhook Handler for Auto-Creating Support Tickets (Task 2: Interns/Gayatri).
     Supports GET (query parameters) and POST (x-www-form-urlencoded / json).
     """
-    params = {}
-    if request.method == "GET":
-        params = dict(request.query_params)
-    else:
-        try:
-            form = await request.form()
-            params = dict(form)
-        except Exception:
-            try:
-                params = await request.json()
-            except Exception:
-                params = dict(request.query_params)
+    params = await _extract_ivr_params(request)
 
     call_sid = (params.get("CallSid") or params.get("call_sid") or "").strip()
     caller = (params.get("CallFrom") or params.get("From") or params.get("from") or "").strip()
     digits = str(params.get("digits") or params.get("Digits") or "").strip()
     recording_url = params.get("RecordingUrl") or params.get("recording_url")
-    department = params.get("department") or params.get("Department") or "Interns/Gayatri"
 
     if not caller:
         raise HTTPException(status_code=400, detail="Missing required 'From' caller phone number")
 
-    clean_phone = re.sub(r"\D", "", caller)
-    if clean_phone.startswith("0") and len(clean_phone) == 11:
-        clean_phone = f"91{clean_phone[1:]}"
-    elif len(clean_phone) == 10:
-        clean_phone = f"91{clean_phone}"
-
+    clean_phone = _normalize_caller_phone(caller)
     caller_email = f"{clean_phone}@phone.chakorahub.com"
     caller_name = f"IVR Caller ({clean_phone})"
     category = "Internship" if digits in ("2", "intern", "interns") else "General"
@@ -1916,7 +1971,7 @@ async def exotel_ivr_create_ticket(request: Request, background_tasks: Backgroun
         f"Call SID: {call_sid}\n"
         f"Caller Number: {clean_phone}\n"
         f"DTMF Digit Selected: {digits or 'None'}\n"
-        f"Assigned Desk: Interns / Gayatri Alahari\n"
+        f"Assigned Desk: Interns / {GAYATRI_ASSIGNEE}\n"
         f"Call Voice Recording: {recording_url or 'None'}"
     )
 
@@ -1935,20 +1990,7 @@ async def exotel_ivr_create_ticket(request: Request, background_tasks: Backgroun
         created = await _create_ticket_logic(ticket_req, background_tasks)
         ticket_id = created.get("ticket_number")
 
-        # Assign to Gayatri Alahari if related to Interns
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute(
-                "UPDATE SUPPORT_TICKETS SET ASSIGNED_TO = :1, UPDATED_AT = SYSDATE WHERE TICKET_ID = :2",
-                ["Gayatri Alahari", ticket_id]
-            )
-            conn.commit()
-            cursor.close()
-            conn.close()
-            logger.info(f"✅ Auto-assigned IVR Ticket {ticket_id} to Gayatri Alahari (Interns Desk)")
-        except Exception as e:
-            logger.warning(f"Could not update assigned_to for {ticket_id}: {e}")
+        _assign_ticket_to_staff(ticket_id, GAYATRI_ASSIGNEE)
 
         return {
             "status": "success",
@@ -1956,11 +1998,11 @@ async def exotel_ivr_create_ticket(request: Request, background_tasks: Backgroun
             "ticket_number": ticket_id,
             "call_sid": call_sid,
             "caller": clean_phone,
-            "assigned_to": "Gayatri Alahari",
-            "message": f"Support Ticket {ticket_id} registered successfully for Interns/Gayatri Desk"
+            "assigned_to": GAYATRI_ASSIGNEE,
+            "message": f"Support Ticket {ticket_id} registered successfully for Interns/{GAYATRI_ASSIGNEE} Desk"
         }
     except Exception as e:
-        logger.error(f"Failed to create IVR ticket: {e}")
+        logger.exception("Failed to create IVR ticket: %s", e)
         raise HTTPException(status_code=500, detail=f"Failed to create IVR ticket: {str(e)}")
 
 
@@ -1970,52 +2012,19 @@ async def exotel_ivr_ticket_status(request: Request):
     """
     Exotel Passthrough / Voice TTS endpoint for caller to query ticket status.
     """
-    params = {}
-    if request.method == "GET":
-        params = dict(request.query_params)
-    else:
-        try:
-            form = await request.form()
-            params = dict(form)
-        except Exception:
-            params = dict(request.query_params)
-
+    params = await _extract_ivr_params(request)
     caller = (params.get("CallFrom") or params.get("From") or params.get("from") or "").strip()
     digits = str(params.get("digits") or params.get("Digits") or "").strip()
 
-    ticket_number = digits
     ticket = None
-
-    if ticket_number:
+    if digits:
         try:
-            ticket = _get_ticket_logic(ticket_number)
+            ticket = _get_ticket_logic(digits)
         except Exception:
             ticket = None
 
-    # Fallback: if caller provided no ticket number, find their latest ticket by phone
     if not ticket and caller:
-        clean_phone = re.sub(r"\D", "", caller)
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT TICKET_ID, STATUS, CATEGORY, TITLE
-                FROM SUPPORT_TICKETS
-                WHERE USER_ID LIKE :1
-                ORDER BY CREATED_AT DESC
-            """, [f"%{clean_phone}%"])
-            row = cursor.fetchone()
-            cursor.close()
-            conn.close()
-            if row:
-                ticket = {
-                    "ticket_number": row[0],
-                    "status": row[1],
-                    "category": row[2],
-                    "subject": row[3]
-                }
-        except Exception as e:
-            logger.warning(f"Error querying ticket by phone: {e}")
+        ticket = _find_latest_ticket_by_phone(caller)
 
     if ticket:
         status_text = f"Your support ticket {ticket.get('ticket_number')} is currently {ticket.get('status')}."
