@@ -1868,6 +1868,178 @@ async def api_rate_ticket(ticket_number: str, rate_req: RateTicketRequest):
 
 
 # =====================================================
+# EXOTEL IVR + TICKET INTEGRATION (TASK 2: Interns / Gayatri)
+# =====================================================
+
+GAYATRI_ASSIGNEE = "Gayatri Alahari"
+
+
+async def _extract_ivr_params(request: Request) -> dict:
+    """Helper to extract parameters across GET, form-data, and JSON requests."""
+    if request.method == "GET":
+        return dict(request.query_params)
+    try:
+        form = await request.form()
+        return dict(form)
+    except Exception:
+        pass
+    try:
+        return await request.json()
+    except Exception:
+        return dict(request.query_params)
+
+
+def _normalize_caller_phone(caller: str) -> str:
+    """Normalize caller phone string into standardized country code format."""
+    clean_phone = re.sub(r"\D", "", caller)
+    if clean_phone.startswith("0") and len(clean_phone) == 11:
+        return f"91{clean_phone[1:]}"
+    if len(clean_phone) == 10:
+        return f"91{clean_phone}"
+    return clean_phone
+
+
+def _assign_ticket_to_staff(ticket_id: str, assignee: str) -> None:
+    """Assign ticket to designated staff member in database."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE SUPPORT_TICKETS SET ASSIGNED_TO = :1, UPDATED_AT = SYSDATE WHERE TICKET_ID = :2",
+            [assignee, ticket_id]
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+        logger.info(f"✅ Auto-assigned IVR Ticket {ticket_id} to {assignee} (Interns Desk)")
+    except Exception as e:
+        logger.warning(f"Could not update assigned_to for {ticket_id}: {e}")
+
+
+def _find_latest_ticket_by_phone(caller: str) -> Optional[dict]:
+    """Lookup most recent support ticket associated with caller phone number."""
+    clean_phone = _normalize_caller_phone(caller)
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT TICKET_ID, STATUS, CATEGORY, TITLE
+            FROM SUPPORT_TICKETS
+            WHERE USER_ID LIKE :1
+            ORDER BY CREATED_AT DESC
+        """, [f"%{clean_phone}%"])
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if row:
+            return {
+                "ticket_number": row[0],
+                "status": row[1],
+                "category": row[2],
+                "subject": row[3]
+            }
+    except Exception as e:
+        logger.warning(f"Error querying ticket by phone: {e}")
+    return None
+
+
+@app.api_route("/api/ticket/ivr/create", methods=["GET", "POST"])
+@app.api_route("/api/ivr/ticket/create", methods=["GET", "POST"])
+@app.api_route("/exotel/ticket/create", methods=["GET", "POST"])
+async def exotel_ivr_create_ticket(request: Request, background_tasks: BackgroundTasks):
+    """
+    Exotel Passthrough Applet Webhook Handler for Auto-Creating Support Tickets (Task 2: Interns/Gayatri).
+    Supports GET (query parameters) and POST (x-www-form-urlencoded / json).
+    """
+    params = await _extract_ivr_params(request)
+
+    call_sid = (params.get("CallSid") or params.get("call_sid") or "").strip()
+    caller = (params.get("CallFrom") or params.get("From") or params.get("from") or "").strip()
+    digits = str(params.get("digits") or params.get("Digits") or "").strip()
+    recording_url = params.get("RecordingUrl") or params.get("recording_url")
+
+    if not caller:
+        raise HTTPException(status_code=400, detail="Missing required 'From' caller phone number")
+
+    clean_phone = _normalize_caller_phone(caller)
+    caller_email = f"{clean_phone}@phone.chakorahub.com"
+    caller_name = f"IVR Caller ({clean_phone})"
+    category = "Internship" if digits in ("2", "intern", "interns") else "General"
+    subject = f"IVR Call Ticket - {category} ({clean_phone})"
+    description = (
+        f"Automated Support Ticket created from Exotel IVR Call.\n"
+        f"Call SID: {call_sid}\n"
+        f"Caller Number: {clean_phone}\n"
+        f"DTMF Digit Selected: {digits or 'None'}\n"
+        f"Assigned Desk: Interns / {GAYATRI_ASSIGNEE}\n"
+        f"Call Voice Recording: {recording_url or 'None'}"
+    )
+
+    ticket_req = CreateTicketRequest(
+        caller_email=caller_email,
+        caller_name=caller_name,
+        caller_phone=clean_phone,
+        category=category,
+        priority="MEDIUM",
+        subject=subject,
+        description=description,
+        attachment_url=recording_url
+    )
+
+    try:
+        created = await _create_ticket_logic(ticket_req, background_tasks)
+        ticket_id = created.get("ticket_number")
+
+        _assign_ticket_to_staff(ticket_id, GAYATRI_ASSIGNEE)
+
+        return {
+            "status": "success",
+            "action": "TICKET_CREATED",
+            "ticket_number": ticket_id,
+            "call_sid": call_sid,
+            "caller": clean_phone,
+            "assigned_to": GAYATRI_ASSIGNEE,
+            "message": f"Support Ticket {ticket_id} registered successfully for Interns/{GAYATRI_ASSIGNEE} Desk"
+        }
+    except Exception as e:
+        logger.exception("Failed to create IVR ticket: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to create IVR ticket: {str(e)}")
+
+
+@app.api_route("/api/ticket/ivr/status", methods=["GET", "POST"])
+@app.api_route("/exotel/ticket/status", methods=["GET", "POST"])
+async def exotel_ivr_ticket_status(request: Request):
+    """
+    Exotel Passthrough / Voice TTS endpoint for caller to query ticket status.
+    """
+    params = await _extract_ivr_params(request)
+    caller = (params.get("CallFrom") or params.get("From") or params.get("from") or "").strip()
+    digits = str(params.get("digits") or params.get("Digits") or "").strip()
+
+    ticket = None
+    if digits:
+        try:
+            ticket = _get_ticket_logic(digits)
+        except Exception:
+            ticket = None
+
+    if not ticket and caller:
+        ticket = _find_latest_ticket_by_phone(caller)
+
+    if ticket:
+        status_text = f"Your support ticket {ticket.get('ticket_number')} is currently {ticket.get('status')}."
+    else:
+        status_text = "No active support ticket found for your number. Please hold while we connect you to our support team."
+
+    return {
+        "status": "success",
+        "ticket": ticket,
+        "tts_text": status_text,
+        "message": status_text
+    }
+
+
+# =====================================================
 # SERVICE ENTRYPOINT
 # =====================================================
 if __name__ == "__main__":
