@@ -806,6 +806,11 @@ def serve_ticket_portal(role: Optional[str] = Query(None)):
     return _resolve_template(["ticket_student.html"])
 
 
+@app.get("/resources")
+def redirect_resources():
+    return RedirectResponse(url="http://127.0.0.1:8080/resources" if HOST in ("127.0.0.1", "localhost") or "localhost" in TICKET_PUBLIC_URL else "/resources")
+
+
 # =====================================================
 # PYDANTIC DATA MODELS
 # =====================================================
