@@ -33,6 +33,11 @@ WAIT = int(os.getenv("SELENIUM_WAIT_TIMEOUT", "25"))
 def driver():
     """Initialize a headless Chrome browser matching CI/CD standard options."""
     import shutil
+
+    # Filter out any mismatched pre-installed chromedriver directories from PATH so Selenium Manager resolves the exact matching version
+    clean_path_parts = [p for p in os.environ.get("PATH", "").split(os.pathsep) if "chromedriver" not in p.lower()]
+    os.environ["PATH"] = os.pathsep.join(clean_path_parts)
+
     options = webdriver.ChromeOptions()
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")

@@ -99,15 +99,18 @@ jobs:
         uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2.2.0
         with:
           chrome-version: "latest"
-          install-chromedriver: true
+          install-chromedriver: false
 
-      - name: Link Chrome binary
+      - name: Configure Chrome and driver environment
         run: |
           CHROME_PATH="${{ steps.setup-chrome.outputs.chrome-path }}"
           if [ -n "$CHROME_PATH" ] && [ -f "$CHROME_PATH" ]; then
             sudo ln -fs "$CHROME_PATH" /usr/bin/google-chrome || true
             sudo ln -fs "$CHROME_PATH" /usr/bin/chrome || true
           fi
+          # Remove mismatched chromedrivers so Selenium Manager automatically gets the matching driver
+          sudo rm -rf /opt/hostedtoolcache/setup-chrome/chromedriver || true
+          sudo rm -f /usr/local/bin/chromedriver /usr/bin/chromedriver || true
 
       - name: Install Selenium test dependencies
         run: |
