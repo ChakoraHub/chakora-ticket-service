@@ -188,3 +188,4 @@ jobs:
           script: |
             rm -f /home/ec2-user/ticket-maintenance.flag /tmp/ticket-maintenance.flag "${{ secrets.APP_PATH }}/ticket-maintenance.flag" || true
             echo "Direct SSH maintenance flag cleanup completed."
+
