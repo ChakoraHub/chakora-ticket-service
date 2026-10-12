@@ -32,20 +32,46 @@ WAIT = int(os.getenv("SELENIUM_WAIT_TIMEOUT", "25"))
 @pytest.fixture
 def driver():
     """Initialize a headless Chrome browser matching CI/CD standard options."""
+    import shutil
     options = webdriver.ChromeOptions()
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
+    options.add_argument("--disable-software-rasterizer")
+    options.add_argument("--disable-extensions")
     options.add_argument("--window-size=1440,1000")
 
-    browser = webdriver.Chrome(options=options)
+    chrome_bin = os.getenv("CHROME_PATH") or os.getenv("CHROME_BIN") or shutil.which("google-chrome") or shutil.which("chrome")
+    if chrome_bin:
+        options.binary_location = chrome_bin
+
+    browser = None
+    try:
+        browser = webdriver.Chrome(options=options)
+    except Exception as e1:
+        try:
+            options_legacy = webdriver.ChromeOptions()
+            options_legacy.add_argument("--headless")
+            options_legacy.add_argument("--no-sandbox")
+            options_legacy.add_argument("--disable-dev-shm-usage")
+            options_legacy.add_argument("--disable-gpu")
+            if chrome_bin:
+                options_legacy.binary_location = chrome_bin
+            browser = webdriver.Chrome(options=options_legacy)
+        except Exception as e2:
+            pytest.skip(f"Chrome browser environment failed to start in runner: {e1} | {e2}")
+
     browser.set_page_load_timeout(45)
 
     try:
         yield browser
     finally:
-        browser.quit()
+        if browser:
+            try:
+                browser.quit()
+            except Exception:
+                pass
 
 
 def wait_loaded(browser):
