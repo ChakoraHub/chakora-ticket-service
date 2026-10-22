@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chakora-ticket-service
+  namespace: ticketing
+  labels:
+    app: chakora-ticket-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chakora-ticket-service
+  template:
+    metadata:
+      labels:
+        app: chakora-ticket-service
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: ticket-service
+          image: ghcr.io/chakorahub/chakora-ticket-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8025
+              name: http
+          env:
+            - name: SERVICE_PORT
+              value: "8025"
+            - name: HOST
+              value: "0.0.0.0"
+            - name: ORACLE_HOST
+              value: "56.228.73.210"
+            - name: ORACLE_PORT
+              value: "1521"
+            - name: ORACLE_SERVICE_NAME
+              value: "FREEPDB1"
+            - name: ORACLE_USER
+              value: "SUPPORT"
+            - name: ORACLE_PASSWORD
+              value: "Welcome123"
+            - name: ORACLE_SCHEMA
+              value: "CHAKORA"
+            - name: AWS_REGION
+              value: "eu-north-1"
+            - name: ADMIN_EMAIL
+              value: "admin@chakorahub.com"
+            - name: SUPPORT_EMAIL
+              value: "support@chakorahub.com"
+            - name: SES_SENDER_EMAIL
+              value: "admin@chakorahub.com"
+            - name: S3_BUCKET
+              value: "chakorahub-rag-s3"
+          readinessProbe:
+            httpGet:
+              path: /api/ticket/health
+              port: 8025
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/ticket/health
+              port: 8025
+            initialDelaySeconds: 25
+            periodSeconds: 15
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

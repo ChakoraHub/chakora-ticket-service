@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Ticket Workspace - ChakoraHub</title>
+<meta name="description" content="Employee ticket workspace - view and resolve only your assigned tickets.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{--primary:#2563eb;--primary-h:#1d4ed8;--primary-l:#eff6ff;--sec:#0f172a;--surf:#fff;--bg:#f1f5f9;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--danger:#ef4444;--danger-bg:#fef2f2;--warn:#f59e0b;--warn-bg:#fffbeb;--ok:#10b981;--ok-bg:#ecfdf5;--urg:#f97316;--urg-bg:#fff7ed;--r:8px;--rm:12px;--rl:16px;--s1:0 1px 3px rgba(0,0,0,.08);--s2:0 4px 12px rgba(0,0,0,.1)}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif}
+body{background:var(--bg);color:var(--text);min-height:100vh}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:240px;background:var(--sec);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
+.sidebar-brand{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.sidebar-brand .logo{width:34px;height:34px;background:var(--primary);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff}
+.sidebar-brand span{font-size:14px;font-weight:700;line-height:1.2}
+.sidebar-brand small{display:block;font-size:10px;font-weight:500;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px}
+.sidebar-user{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ea580c);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0}
+.user-info .name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-info .role{font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
+.nav-section{padding:8px 16px 4px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px}
+.nav-link{display:flex;align-items:center;gap:10px;padding:9px 16px;color:#cbd5e1;font-size:13px;font-weight:500;text-decoration:none;cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:all .15s}
+.nav-link:hover,.nav-link.active{background:rgba(255,255,255,.08);color:#fff}
+.nav-link.active{border-left:3px solid var(--primary)}
+.nav-link i{width:16px;text-align:center;font-size:14px}
+.nav-badge{margin-left:auto;background:var(--primary);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
+.sidebar-footer{padding:14px 16px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:#64748b}
+.sidebar-footer a{color:#94a3b8;text-decoration:none}
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--s1)}
+.topbar-left h1{font-size:18px;font-weight:800;color:var(--sec)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.page-content{padding:24px 28px;flex:1}
+.notif-btn{position:relative;background:none;border:1px solid var(--border);border-radius:var(--r);width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted)}
+.notif-dot{position:absolute;top:5px;right:5px;width:8px;height:8px;background:var(--danger);border-radius:50%;border:2px solid #fff;display:none}
+.notif-dot.show{display:block}
+#toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:#fff;border:1px solid var(--border);border-left:4px solid var(--ok);border-radius:var(--rm);padding:12px 16px;min-width:280px;max-width:360px;box-shadow:var(--s2);display:flex;align-items:flex-start;gap:10px;animation:slideIn .3s ease}
+.toast.error{border-left-color:var(--danger)}
+.toast.info{border-left-color:var(--primary)}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kpi-card{background:#fff;border-radius:var(--rm);border:1px solid var(--border);padding:18px 20px;position:relative;overflow:hidden;box-shadow:var(--s1)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px}
+.kpi-card.blue::before{background:var(--primary)}
+.kpi-card.green::before{background:var(--ok)}
+.kpi-card.orange::before{background:var(--urg)}
+.kpi-card.red::before{background:var(--danger)}
+.kpi-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.kpi-val{font-size:32px;font-weight:900;line-height:1;color:var(--sec)}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.kpi-icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:28px;opacity:.08}
+.completed-card{background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1px solid #6ee7b7;border-radius:var(--rm);padding:16px 20px;display:flex;align-items:center;gap:16px;margin-bottom:24px}
+.completed-icon{width:52px;height:52px;background:var(--ok);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;flex-shrink:0}
+.completed-text h3{font-size:16px;font-weight:800;color:#065f46}
+.completed-text p{font-size:13px;color:#047857;margin-top:2px}
+.table-card{background:#fff;border-radius:var(--rm);border:1px solid var(--border);box-shadow:var(--s1);overflow:hidden;margin-bottom:24px}
+.table-toolbar{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.table-title{font-size:14px;font-weight:700;color:var(--sec);display:flex;align-items:center;gap:8px}
+.toolbar-right{display:flex;align-items:center;gap:8px}
+.search-box{display:flex;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:7px 12px;gap:7px;min-width:220px}
+.search-box input{border:none;background:transparent;outline:none;font-size:13px;width:100%}
+.search-box i{color:var(--muted);font-size:12px}
+select.flt{padding:7px 12px;border-radius:var(--r);border:1px solid var(--border);background:#fff;font-size:13px;color:var(--text);outline:none}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:var(--r);font-weight:600;font-size:13px;cursor:pointer;border:1px solid transparent;transition:all .2s;text-decoration:none}
+.btn-primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.25)}
+.btn-primary:hover{background:#1d4ed8}
+.btn-sec{background:#fff;border-color:var(--border);color:var(--text)}
+.btn-sec:hover{background:var(--bg)}
+.btn-sm{padding:5px 11px;font-size:12px}
+table{width:100%;border-collapse:collapse}
+th{background:#f8fafc;padding:11px 16px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);text-align:left}
+td{padding:13px 16px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover{background:#f8fafc}
+.token-id{font-weight:700;color:var(--primary);font-family:monospace;font-size:12px}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.b-open{background:#dbeafe;color:#1d4ed8}
+.b-review{background:#fef3c7;color:#92400e}
+.b-prog{background:#ede9fe;color:#6d28d9}
+.b-res{background:#d1fae5;color:#065f46}
+.b-closed{background:#f1f5f9;color:#475569}
+.b-p-critical{background:var(--danger-bg);color:var(--danger);border:1px solid #fecaca}
+.b-p-high{background:var(--warn-bg);color:#b45309;border:1px solid #fde68a}
+.b-p-urgent{background:var(--urg-bg);color:var(--urg);border:1px solid #fed7aa}
+.b-p-medium{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.b-p-low{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1}
+.stage-dots{display:flex;gap:3px;margin-top:4px}
+.dot{width:8px;height:8px;border-radius:50%;background:#e2e8f0}
+.dot.done{background:var(--ok)}
+.dot.active{background:var(--primary)}
+.empty-state{text-align:center;padding:56px 20px;color:var(--muted)}
+.empty-state i{font-size:40px;color:#cbd5e1;display:block;margin-bottom:12px}
+.empty-state p{font-size:14px}
+.stars{display:flex;gap:2px}
+.star{font-size:15px;color:#fbbf24}
+.star.empty{color:#e2e8f0}
+/* DRAWER */
+.drawer-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:200;display:none;align-items:flex-start;justify-content:flex-end}
+.drawer-overlay.open{display:flex}
+.drawer{width:520px;max-width:95vw;height:100vh;background:#fff;display:flex;flex-direction:column;box-shadow:-4px 0 30px rgba(0,0,0,.15);overflow:hidden;animation:slideDrawer .25s ease}
+@keyframes slideDrawer{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.drawer-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#0f172a,#1e293b)}
+.drawer-head-left .ticket-ref{font-size:12px;color:#94a3b8;margin-bottom:2px}
+.drawer-head-left h3{font-size:16px;font-weight:800;color:#fff}
+.drawer-close{background:rgba(255,255,255,.1);border:none;border-radius:var(--r);width:32px;height:32px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center}
+.d-section{padding:16px 22px;border-bottom:1px solid var(--border)}
+.d-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.info-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bg)}
+.info-row:last-child{border-bottom:none}
+.info-label{font-size:11px;font-weight:600;color:var(--muted);width:90px;flex-shrink:0;text-transform:uppercase}
+.info-val{font-size:13px;font-weight:500;color:var(--sec);flex:1}
+/* stage tracker inside drawer */
+.stage-tracker{display:flex;align-items:flex-start;gap:0}
+.stage-step{flex:1;text-align:center;position:relative}
+.stage-step::after{content:'';position:absolute;top:15px;left:50%;width:100%;height:2px;background:#e2e8f0;z-index:0}
+.stage-step:last-child::after{display:none}
+.step-circle{width:30px;height:30px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;margin:0 auto 5px;font-size:12px;font-weight:700;color:#94a3b8;position:relative;z-index:1;transition:all .3s}
+.step-circle.done{background:var(--ok);color:#fff}
+.step-circle.active{background:var(--primary);color:#fff;box-shadow:0 0 0 4px rgba(37,99,235,.2)}
+.step-label{font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.step-label.active{color:var(--primary)}
+.step-label.done{color:var(--ok)}
+/* chat */
+.chat-thread{padding:14px 22px;display:flex;flex-direction:column;gap:10px;flex:1;overflow-y:auto;max-height:260px}
+.msg{padding:10px 14px;border-radius:10px;max-width:88%;font-size:13px;line-height:1.5}
+.msg.student{background:#eff6ff;border:1px solid #bfdbfe;align-self:flex-start;border-bottom-left-radius:2px}
+.msg.agent{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;align-self:flex-end;border-bottom-right-radius:2px}
+.msg.system{background:#f8fafc;border:1px solid var(--border);align-self:center;text-align:center;font-size:11px;color:var(--muted);border-radius:6px;padding:6px 12px;max-width:100%}
+.msg-meta{font-size:10px;margin-top:4px;opacity:.65}
+.msg.agent .msg-meta{text-align:right;color:#bfdbfe}
+.drawer-footer{padding:14px 22px;border-top:1px solid var(--border);background:#f8fafc}
+.reply-box{display:flex;gap:8px;align-items:flex-end}
+.reply-input{flex:1;border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:13px;resize:none;outline:none;font-family:'Inter',sans-serif;min-height:60px;background:#fff}
+.reply-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.stage-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stage-btn{padding:7px 4px;border-radius:var(--r);border:1px solid var(--border);background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);transition:all .2s;text-align:center}
+.stage-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-l)}
+.stage-btn.resolve{border-color:var(--ok);color:var(--ok)}
+.stage-btn.resolve:hover{background:var(--ok);color:#fff}
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo">CH</div>
+    <div>
+      <span>ChakoraHub</span>
+      <small>Staff Workspace</small>
+    </div>
+  </div>
+  <div class="sidebar-user">
+    <div class="avatar" id="sidebar-avatar">E</div>
+    <div class="user-info">
+      <div class="name" id="sidebar-name">Employee</div>
+      <div class="role">Support Staff</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">My Workspace</div>
+    <button class="nav-link active" id="nav-all" onclick="switchView('all',this)">
+      <i class="fa-solid fa-ticket"></i> All My Tickets
+      <span class="nav-badge" id="nb-all">0</span>
+    </button>
+    <button class="nav-link" id="nav-prog" onclick="switchView('progress',this)">
+      <i class="fa-solid fa-spinner"></i> In Progress
+      <span class="nav-badge" id="nb-prog">0</span>
+    </button>
+    <button class="nav-link" id="nav-done" onclick="switchView('done',this)">
+      <i class="fa-solid fa-circle-check"></i> Completed
+      <span class="nav-badge" id="nb-done" style="background:#10b981">0</span>
+    </button>
+    <div class="nav-section">Account</div>
+    <a class="nav-link" href="/employee-resources"><i class="fa-solid fa-house"></i> Home</a>
+    <a class="nav-link" href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+  </nav>
+  <div class="sidebar-footer">Employee Portal &bull; ChakoraHub</div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1 id="view-heading">My Assigned Tickets</h1>
+    </div>
+    <div class="topbar-right">
+      <button class="notif-btn" title="Notifications">
+        <i class="fa-solid fa-bell"></i>
+        <div class="notif-dot" id="notif-dot"></div>
+      </button>
+      <button class="btn btn-sec btn-sm" onclick="loadTickets()">
+        <i class="fa-solid fa-rotate"></i> Refresh
+      </button>
+    </div>
+  </header>
+  <div class="page-content">
+
+    <!-- Completed banner -->
+    <div class="completed-card" id="done-banner" style="display:none">
+      <div class="completed-icon"><i class="fa-solid fa-trophy"></i></div>
+      <div class="completed-text">
+        <h3 id="done-title">Cases Completed</h3>
+        <p id="done-sub">Great work — keep it up!</p>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Assigned to Me</div>
+        <div class="kpi-val" id="kpi-assigned">0</div>
+        <div class="kpi-sub">Open tickets</div>
+        <i class="fa-solid fa-ticket kpi-icon"></i>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">In Progress</div>
+        <div class="kpi-val" id="kpi-progress">0</div>
+        <div class="kpi-sub">Actively working</div>
+        <i class="fa-solid fa-spinner kpi-icon"></i>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Completed</div>
+        <div class="kpi-val" id="kpi-resolved">0</div>
+        <div class="kpi-sub">Cases you closed</div>
+        <i class="fa-solid fa-circle-check kpi-icon"></i>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Critical / Urgent</div>
+        <div class="kpi-val" id="kpi-critical">0</div>
+        <div class="kpi-sub">Needs action now</div>
+        <i class="fa-solid fa-triangle-exclamation kpi-icon"></i>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-toolbar">
+        <div class="table-title">
+          <i class="fa-solid fa-inbox" style="color:var(--primary)"></i>
+          <span id="table-label">My Assigned Tickets</span>
+        </div>
+        <div class="toolbar-right">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="search-inp" placeholder="Search ticket, subject, student..." oninput="renderTable()">
+          </div>
+          <select class="flt" id="stage-flt" onchange="renderTable()">
+            <option value="ALL">All Stages</option>
+            <option value="OPEN">Open</option>
+            <option value="UNDER_REVIEW">Under Review</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="RESOLVED">Resolved</option>
+            <option value="CLOSED">Closed</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket #</th>
+              <th>Student</th>
+              <th>Subject</th>
+              <th>Category</th>
+              <th>Priority</th>
+              <th>Stage</th>
+              <th>Rating</th>
+              <th>Created</th>
+              <th style="text-align:right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-body">
+            <tr><td colspan="9" style="text-align:center;padding:48px;color:var(--muted)">
+              <i class="fa-solid fa-spinner fa-spin" style="font-size:24px;color:#cbd5e1;display:block;margin-bottom:10px"></i>
+              Loading your tickets...
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- DRAWER -->
+<div class="drawer-overlay" id="drawer-bg" onclick="maybeClose(event)">
+  <div class="drawer" id="drawer">
+    <div class="drawer-head">
+      <div class="drawer-head-left">
+        <div class="ticket-ref" id="d-num">#--</div>
+        <h3 id="d-subj">Loading...</h3>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Stage Progress -->
+    <div class="d-section">
+      <div class="d-section-title"><i class="fa-solid fa-list-check"></i> Case Progress</div>
+      <div class="stage-tracker">
+        <div class="stage-step"><div class="step-circle" id="sc-1">1</div><div class="step-label" id="sl-1">Submitted</div></div>
+        <div class="stage-step"><div class="step-circle" id="sc-2">2</div><div class="step-label" id="sl-2">Review</div></div>
+        <div class="stage-step"><div class="step-circle" id="sc-3">3</div><div class="step-label" id="sl-3">Working</div></div>
+        <div class="stage-step"><div class="step-circle" id="sc-4">4</div><div class="step-label" id="sl-4">Resolved</div></div>
+        <div class="stage-step"><div class="step-circle" id="sc-5"><i class="fa-solid fa-lock" style="font-size:9px"></i></div><div class="step-label" id="sl-5">Closed</div></div>
+      </div>
+    </div>
+
+    <!-- Student Info -->
+    <div class="d-section">
+      <div class="d-section-title"><i class="fa-solid fa-user-graduate"></i> Student Info</div>
+      <div class="info-row"><span class="info-label">Name</span><span class="info-val" id="d-name">-</span></div>
+      <div class="info-row"><span class="info-label">Email</span><span class="info-val" id="d-email" style="font-family:monospace;font-size:12px">-</span></div>
+      <div class="info-row"><span class="info-label">Category</span><span class="info-val" id="d-cat">-</span></div>
+      <div class="info-row"><span class="info-label">Priority</span><span class="info-val" id="d-pri">-</span></div>
+      <div class="info-row"><span class="info-label">Rating</span><span class="info-val" id="d-rating">-</span></div>
+    </div>
+
+    <!-- Description -->
+    <div class="d-section">
+      <div class="d-section-title"><i class="fa-solid fa-file-lines"></i> Issue Description</div>
+      <p id="d-desc" style="font-size:13px;line-height:1.6;white-space:pre-wrap;color:var(--text)">-</p>
+    </div>
+
+    <!-- Conversation -->
+    <div class="d-section" style="border-bottom:none;padding-bottom:8px">
+      <div class="d-section-title"><i class="fa-solid fa-comments"></i> Conversation</div>
+    </div>
+    <div class="chat-thread" id="d-chat"></div>
+
+    <!-- Footer -->
+    <div class="drawer-footer" id="d-footer">
+      <div id="active-actions-wrapper">
+        <div class="d-section-title" style="margin-bottom:8px"><i class="fa-solid fa-arrow-right-arrow-left"></i> Update Stage & Reply</div>
+        <div class="stage-actions">
+          <button class="stage-btn" onclick="setStage('UNDER_REVIEW')"><i class="fa-solid fa-magnifying-glass"></i> Review</button>
+          <button class="stage-btn" onclick="setStage('IN_PROGRESS')"><i class="fa-solid fa-gears"></i> In Progress</button>
+          <button class="stage-btn resolve" onclick="setStage('RESOLVED')"><i class="fa-solid fa-circle-check"></i> Resolve</button>
+        </div>
+        <div class="reply-box">
+          <textarea class="reply-input" id="reply-inp" placeholder="Type reply to student... (Enter to send, Shift+Enter for new line)" onkeydown="replyKey(event)"></textarea>
+          <button class="btn btn-primary" onclick="sendReply()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+      </div>
+      <div id="closed-case-banner" style="display:none;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:var(--r);padding:14px;text-align:center;color:#475569;font-weight:700;font-size:13px;">
+        <i class="fa-solid fa-lock" style="margin-right:6px;color:#0f172a;"></i>
+        Case Closed: This ticket is closed. Closed means closed — no further replies or stage transitions can be made.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CURRENT_NAME  = "{{ current_user_name }}" || "Employee";
+const CURRENT_EMAIL = "{{ current_user_email }}" || "";
+
+let myTickets = [];
+
+function cleanDisplayName(name, email) {
+    if (!name || name.trim() === '' || name.toLowerCase() === 'user' || name.toLowerCase() === 'student' || name.includes('@')) {
+        if (email && email.includes('@')) {
+            const prefix = email.split('@')[0];
+            return prefix.replace(/[\._0-9\-]+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase()) || 'Student';
+        }
+        return 'Student';
+    }
+    return name.trim();
+}
+
+let activeId  = null;
+let viewMode  = 'all';
+let prevCount = -1;
+
+// Sidebar init
+const ini = CURRENT_NAME.split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+document.getElementById('sidebar-avatar').textContent = ini || 'E';
+document.getElementById('sidebar-name').textContent   = CURRENT_NAME;
+
+// ── Name match (flexible) ──
+function isMine(assigned) {
+    if (!assigned || assigned === 'Unassigned') return false;
+    const a = assigned.toLowerCase().trim();
+    const u = CURRENT_NAME.toLowerCase().trim();
+    if (a === u || a.includes(u) || u.includes(a)) return true;
+    const up = u.split(/\s+/), ap = a.split(/\s+/);
+    return up.some(p => p.length>=3 && a.includes(p)) || ap.some(p => p.length>=3 && u.includes(p));
+}
+
+async function loadTickets() {
+    try {
+        const r = await fetch('/api/ticket/tickets/all');
+        const d = await r.json();
+        if (d.status !== 'success') return;
+        myTickets = (d.tickets||[]).filter(t => isMine(t.assigned_to));
+        if (prevCount >= 0 && myTickets.length > prevCount) {
+            const diff = myTickets.length - prevCount;
+            toast(`You have ${diff} new ticket${diff>1?'s':''} assigned!`, 'info');
+            document.getElementById('notif-dot').classList.add('show');
+        }
+        prevCount = myTickets.length;
+        updateKPIs();
+        renderTable();
+    } catch(e) { console.error(e); }
+}
+
+function updateKPIs() {
+    const open = myTickets.filter(t => t.status!=='RESOLVED' && t.status!=='CLOSED');
+    const prog = myTickets.filter(t => t.status==='IN_PROGRESS');
+    const done = myTickets.filter(t => t.status==='RESOLVED' || t.status==='CLOSED');
+    const crit = myTickets.filter(t => ['CRITICAL','URGENT'].includes((t.priority||'').toUpperCase()) && t.status!=='RESOLVED' && t.status!=='CLOSED');
+    document.getElementById('kpi-assigned').textContent = open.length;
+    document.getElementById('kpi-progress').textContent = prog.length;
+    document.getElementById('kpi-resolved').textContent = done.length;
+    document.getElementById('kpi-critical').textContent = crit.length;
+    document.getElementById('nb-all').textContent  = open.length;
+    document.getElementById('nb-prog').textContent = prog.length;
+    document.getElementById('nb-done').textContent = done.length;
+    if (done.length > 0) {
+        document.getElementById('done-banner').style.display = 'flex';
+        document.getElementById('done-title').textContent = done.length + ' Case' + (done.length>1?'s':'') + ' Completed!';
+        document.getElementById('done-sub').textContent   = 'Excellent work! You have resolved ' + done.length + ' support ticket' + (done.length>1?'s':'') + '.';
+    }
+}
+
+function switchView(view, el) {
+    viewMode = view;
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('notif-dot').classList.remove('show');
+    const titles = {all:'My Assigned Tickets', progress:'In Progress', done:'Completed Cases'};
+    document.getElementById('view-heading').textContent = titles[view];
+    document.getElementById('table-label').textContent  = titles[view];
+    renderTable();
+}
+
+function renderTable() {
+    const tbody  = document.getElementById('tbl-body');
+    const search = document.getElementById('search-inp').value.toLowerCase();
+    const stage  = document.getElementById('stage-flt').value;
+    let list = myTickets;
+    if      (viewMode==='progress') list = myTickets.filter(t => t.status==='IN_PROGRESS');
+    else if (viewMode==='done')     list = myTickets.filter(t => t.status==='RESOLVED'||t.status==='CLOSED');
+    const rows = list.filter(t => {
+        const ok = !search || [t.ticket_number,t.subject,t.caller_name,t.caller_email||'',t.category||''].some(v=>(v||'').toLowerCase().includes(search));
+        const st = stage==='ALL' || t.status===stage;
+        return ok && st;
+    });
+    if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-inbox"></i><p>No tickets here yet.</p><p style="font-size:12px;color:#94a3b8;margin-top:4px">Admin will assign tickets to you and you\'ll be notified by email.</p></div></td></tr>';
+        return;
+    }
+    tbody.innerHTML = rows.map(t => {
+        const p  = (t.priority||'MEDIUM').toUpperCase();
+        const s  = (t.status||'OPEN').toUpperCase();
+        const pc = 'b-p-'+p.toLowerCase();
+        const sc = {OPEN:'b-open',UNDER_REVIEW:'b-review',IN_PROGRESS:'b-prog',RESOLVED:'b-res',CLOSED:'b-closed'}[s]||'b-open';
+        const dots = ['OPEN','UNDER_REVIEW','IN_PROGRESS','RESOLVED','CLOSED'].map((x,i) => {
+            const idx = ['OPEN','UNDER_REVIEW','IN_PROGRESS','RESOLVED','CLOSED'].indexOf(s);
+            const cls = i<idx?'done':i===idx?'active':'';
+            return '<div class="dot '+cls+'"></div>';
+        }).join('');
+        const stars = !t.rating ? '<span style="color:var(--muted);font-size:11px">-</span>' :
+            [1,2,3,4,5].map(i=>'<span class="star'+(i<=parseInt(t.rating)?'':' empty')+'">&#9733;</span>').join('');
+        return '<tr><td><span class="token-id">'+esc(t.ticket_number)+'</span></td>'
+            +'<td><div style="font-weight:700;color:var(--sec)">'+esc(t.caller_name||'Student')+'</div>'
+            +'<div style="font-size:11px;color:var(--muted)">'+esc(t.caller_email||t.user_id||'')+'</div></td>'
+            +'<td style="max-width:200px"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(t.subject||'')+'</div></td>'
+            +'<td><span class="badge" style="background:#f1f5f9;color:#475569">'+esc(t.category||'General')+'</span></td>'
+            +'<td><span class="badge '+pc+'">'+p+'</span></td>'
+            +'<td><span class="badge '+sc+'">'+s.replace('_',' ')+'</span><div class="stage-dots">'+dots+'</div></td>'
+            +'<td><div class="stars">'+stars+'</div></td>'
+            +'<td style="color:var(--muted);font-size:12px">'+fmtDate(t.created_at)+'</td>'
+            +'<td style="text-align:right"><button class="btn btn-primary btn-sm" onclick="openDrawer(\''+t.ticket_number+'\')">'
+            +'<i class="fa-solid fa-comment-dots"></i> Work On It</button></td></tr>';
+    }).join('');
+}
+
+// ── DRAWER ──
+async function openDrawer(id) {
+    activeId = id;
+    document.getElementById('drawer-bg').classList.add('open');
+    document.getElementById('d-num').textContent  = '#'+id;
+    document.getElementById('d-subj').textContent = 'Loading...';
+    document.getElementById('d-chat').innerHTML   = '';
+    try {
+        const r = await fetch('/api/ticket/ticket/'+id);
+        const d = await r.json();
+        if (d.status!=='success') return;
+        const t = d.ticket;
+        document.getElementById('d-subj').textContent = t.subject||'No Subject';
+        document.getElementById('d-name').textContent = cleanDisplayName(t.caller_name, t.caller_email);
+        document.getElementById('d-email').textContent= t.caller_email||t.user_id||'-';
+        document.getElementById('d-cat').textContent  = t.category||'-';
+        const p = (t.priority||'MEDIUM').toUpperCase();
+        document.getElementById('d-pri').innerHTML    = '<span class="badge b-p-'+p.toLowerCase()+'">'+p+'</span>';
+        if (t.rating) {
+            document.getElementById('d-rating').innerHTML = [1,2,3,4,5].map(i=>'<span class="star'+(i<=parseInt(t.rating)?'':' empty')+'">&#9733;</span>').join('');
+        } else {
+            document.getElementById('d-rating').textContent = 'Not rated yet';
+        }
+        document.getElementById('d-desc').textContent = t.description||'No description.';
+        updateTracker(t.status);
+        renderChat(t.comments||[]);
+        const isClosed = String(t.status || '').toUpperCase() === 'CLOSED';
+        const actionsWrap = document.getElementById('active-actions-wrapper');
+        const closedBan   = document.getElementById('closed-case-banner');
+        if (actionsWrap && closedBan) {
+            if (isClosed) {
+                actionsWrap.style.display = 'none';
+                closedBan.style.display   = 'block';
+            } else {
+                actionsWrap.style.display = 'block';
+                closedBan.style.display   = 'none';
+            }
+        }
+    } catch(e) { console.error(e); }
+}
+
+function closeDrawer() {
+    document.getElementById('drawer-bg').classList.remove('open');
+    activeId = null;
+}
+function maybeClose(e) {
+    if (e.target===document.getElementById('drawer-bg')) closeDrawer();
+}
+
+function updateTracker(status) {
+    const order = ['OPEN','UNDER_REVIEW','IN_PROGRESS','RESOLVED','CLOSED'];
+    const cur   = order.indexOf(status);
+    order.forEach((_,i) => {
+        const c  = document.getElementById('sc-'+(i+1));
+        const l  = document.getElementById('sl-'+(i+1));
+        c.className = 'step-circle';
+        l.className = 'step-label';
+        if      (i<cur)  { c.classList.add('done');   l.classList.add('done'); }
+        else if (i===cur){ c.classList.add('active'); l.classList.add('active'); }
+    });
+}
+
+function renderChat(comments) {
+    const c = document.getElementById('d-chat');
+    if (!comments.length) {
+        c.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px">No messages yet. Write a reply below to start!</div>';
+        return;
+    }
+    c.innerHTML = comments.map(m => {
+        if (m.author_type==='SYSTEM') return '<div class="msg system">'+esc(m.message)+'</div>';
+        const a = m.author_type==='AGENT';
+        return '<div class="msg '+(a?'agent':'student')+'"><div>'+esc(m.message)+'</div>'
+            +'<div class="msg-meta">'+(a?'&#128737;&#65039; '+esc(m.author_name||'Staff'):'&#128100; '+esc(m.author_name||'Student'))+' &middot; '+fmtDate(m.created_at)+'</div></div>';
+    }).join('');
+    c.scrollTop = c.scrollHeight;
+}
+
+function replyKey(e) {
+    if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); }
+}
+
+async function sendReply() {
+    if (!activeId) return;
+    const inp = document.getElementById('reply-inp');
+    const msg = inp.value.trim();
+    if (!msg) return;
+    inp.value = '';
+    try {
+        const r = await fetch('/api/ticket/ticket/'+activeId+'/comment', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({author_type:'AGENT',author_name:CURRENT_NAME,message:msg})
+        });
+        if (r.ok) {
+            toast('Reply sent — student will be notified via email & WhatsApp', 'ok');
+            openDrawer(activeId);
+            loadTickets();
+        } else {
+            toast('Failed to send reply', 'error');
+        }
+    } catch(e) { toast('Network error: '+e.message,'error'); }
+}
+
+async function setStage(stage) {
+    if (!activeId) return;
+    try {
+        const r = await fetch('/api/ticket/tickets/'+activeId+'/stage', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({stage:stage,updated_by:CURRENT_NAME})
+        });
+        if (r.ok) {
+            const labels = {UNDER_REVIEW:'Under Review',IN_PROGRESS:'In Progress',RESOLVED:'Resolved'};
+            toast('Stage moved to '+( labels[stage]||stage )+' — student notified!', 'ok');
+            openDrawer(activeId);
+            loadTickets();
+        } else {
+            toast('Stage update failed','error');
+        }
+    } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
+// Helpers
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(d){ if(!d) return '-'; try{ return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }catch{return d;} }
+function toast(msg,type) {
+    const el = document.createElement('div');
+    el.className = 'toast'+(type==='error'?' error':type==='info'?' info':'');
+    const icons = {ok:'fa-circle-check',error:'fa-circle-xmark',info:'fa-bell'};
+    const colors= {ok:'var(--ok)',error:'var(--danger)',info:'var(--primary)'};
+    el.innerHTML = '<i class="fa-solid '+( icons[type]||'fa-circle-check' )+'" style="color:'+(colors[type]||'var(--ok)')+'"></i><span style="font-size:13px;font-weight:500">'+esc(msg)+'</span>';
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(()=>el.remove(),4500);
+}
+
+// Boot
+document.addEventListener('DOMContentLoaded', () => {
+    loadTickets();
+    setInterval(loadTickets, 30000);
+});
+</script>
+</body>
+</html>

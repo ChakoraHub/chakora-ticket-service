@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Ticket Operations Desk - ChakoraHub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --secondary: #0f172a;
+            --surface: #ffffff;
+            --bg: #f8fafc;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+            --urgent: #f97316;
+            --urgent-bg: #fff7ed;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 24px; font-size: 14px; line-height: 1.5; min-height: 100vh; }
+        .module-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; background: white; padding: 20px 24px; border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+        .header-title-area h1 { font-size: 22px; font-weight: 800; color: var(--secondary); display: flex; align-items: center; gap: 10px; }
+        .header-title-area p { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: var(--radius-md); font-weight: 600; font-size: 13px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s ease; text-decoration: none; }
+        .btn-primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; box-shadow: 0 2px 8px rgba(37,99,235,0.25); }
+        .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); color: white; }
+        .btn-orange { background: linear-gradient(135deg, #ea580c, #f97316); color: white; box-shadow: 0 2px 8px rgba(234,88,12,0.25); }
+        .btn-orange:hover { background: #c2410c; transform: translateY(-1px); color: white; }
+        .btn-secondary { background: var(--surface); border-color: var(--border); color: var(--text); }
+        .btn-secondary:hover { background: #f1f5f9; }
+        .portal-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-student { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+        .badge-employee { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .badge-admin { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .kpi-card { background: var(--surface); padding: 18px 20px; border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 6px; position: relative; overflow: hidden; }
+        .kpi-card::after { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); }
+        .kpi-card.kpi-danger::after { background: var(--danger); }
+        .kpi-card.kpi-urgent::after { background: var(--urgent); }
+        .kpi-card.kpi-success::after { background: var(--success); }
+        .kpi-title { color: var(--text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+        .kpi-value { font-size: 28px; font-weight: 800; color: var(--secondary); line-height: 1; }
+        .filter-bar { background: var(--surface); padding: 14px 20px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; border: 1px solid var(--border); border-bottom: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .search-box { display: flex; align-items: center; background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 7px 12px; gap: 8px; width: 280px; }
+        .search-box input { border: none; background: transparent; outline: none; font-size: 13px; width: 100%; }
+        .filter-group { display: flex; align-items: center; gap: 8px; }
+        .filter-select { padding: 7px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); font-size: 13px; outline: none; color: var(--text); }
+        .table-container { background: var(--surface); border: 1px solid var(--border); border-radius: 0 0 var(--radius-lg) var(--radius-lg); overflow-x: auto; box-shadow: var(--shadow-sm); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #f8fafc; padding: 12px 16px; font-weight: 700; font-size: 12px; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 13px; }
+        tr:hover { background-color: #f8fafc; }
+        .badge { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .badge-critical { background: var(--danger-bg); color: var(--danger); border: 1px solid #fecaca; }
+        .badge-urgent { background: var(--urgent-bg); color: var(--urgent); border: 1px solid #fed7aa; }
+        .badge-high { background: var(--warning-bg); color: #b45309; border: 1px solid #fde68a; }
+        .badge-normal, .badge-medium { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+        .badge-low { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .stage-meter { background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden; width: 80px; margin-top: 4px; }
+        .stage-fill { height: 100%; border-radius: 3px; }
+        .fill-1 { width: 25%; background: #3b82f6; }
+        .fill-2 { width: 50%; background: #06b6d4; }
+        .fill-3 { width: 75%; background: #f59e0b; }
+        .fill-4 { width: 100%; background: #10b981; }
+        .token-id { font-family: monospace; font-weight: 700; color: var(--primary); background: var(--primary-light); padding: 3px 6px; border-radius: 4px; }
+        .sla-pill { font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; background: #f1f5f9; color: #475569; }
+        .sla-urgent { background: #fff7ed; color: #c2410c; }
+        .sla-breached { background: #fef2f2; color: #b91c1c; font-weight: 800; }
+        .sla-met { background: #ecfdf5; color: #047857; }
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.4); backdrop-filter: blur(2px); z-index: 1040; opacity: 0; pointer-events: none; transition: all 0.3s; }
+        .drawer-overlay.active { opacity: 1; pointer-events: auto; }
+        .drawer { position: fixed; top: 0; right: -650px; width: 100%; max-width: 600px; height: 100vh; background: var(--surface); z-index: 1050; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; transition: right 0.3s cubic-bezier(0.16,1,0.3,1); }
+        .drawer-overlay.active .drawer { right: 0; }
+        .drawer-header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: #f8fafc; }
+        .drawer-body { flex: 1; overflow-y: auto; padding: 24px; }
+        .drawer-footer { padding: 16px 24px; border-top: 1px solid var(--border); background: var(--surface); }
+        .modal-dialog { background: white; border-radius: var(--radius-lg); max-width: 520px; width: 90%; margin: 60px auto; padding: 24px; box-shadow: var(--shadow-lg); position: relative; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: var(--secondary); }
+        .form-control { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px; outline: none; }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+        .message-bubble { padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 12px; max-width: 85%; line-height: 1.5; font-size: 13px; }
+        .agent-reply { background: #eff6ff; border: 1px solid #bfdbfe; margin-left: auto; }
+        .user-reply { background: #f1f5f9; border: 1px solid var(--border); margin-right: auto; }
+        .system-audit { background: #f8fafc; border: 1px dashed #cbd5e1; text-align: center; font-size: 12px; color: var(--text-muted); margin: 10px auto; padding: 6px 12px; border-radius: 20px; width: fit-content; }
+        .assign-select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; background: #fff; cursor: pointer; color: var(--secondary); }
+        .assign-select:focus { outline: none; border-color: var(--primary); }
+        .user-meta-sub { font-size: 11px; color: var(--text-muted); font-family: monospace; }
+    </style>
+</head>
+
+<body>
+    <div class="module-header">
+        <div class="header-title-area">
+            <h1><i class="fa-solid fa-shield-halved text-danger"></i> Ticket Operations Desk</h1>
+            <p>Centralized Incident Management, Student Identification, Staff Assignment & SLA Tracking.</p>
+        </div>
+        <div class="header-actions">
+            <span class="portal-badge badge-admin"><i class="fa-solid fa-lock"></i> Operations Admin</span>
+            <a href="/" class="btn btn-secondary"><i class="fa-solid fa-house"></i> Home</a>
+        </div>
+    </div>
+
+    <!-- Admin Executive KPIs -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <span class="kpi-title">Total Incidents</span>
+            <span class="kpi-value" id="kpi-total">0</span>
+        </div>
+        <div class="kpi-card kpi-danger">
+            <span class="kpi-title">Critical Severity</span>
+            <span class="kpi-value" id="kpi-critical">0</span>
+        </div>
+        <div class="kpi-card kpi-urgent">
+            <span class="kpi-title">Unassigned Tickets</span>
+            <span class="kpi-value" id="kpi-unassigned">0</span>
+        </div>
+        <div class="kpi-card kpi-success">
+            <span class="kpi-title">Resolved</span>
+            <span class="kpi-value" id="kpi-resolved">0</span>
+        </div>
+    </div>
+
+    <!-- Advanced Filter Bar -->
+    <div class="filter-bar">
+        <div class="search-box">
+            <i class="fa-solid fa-search text-muted"></i>
+            <input type="text" id="search-input" placeholder="Search ticket, student name, email, or subject..." oninput="renderTable()">
+        </div>
+        <div class="filter-group">
+            <select class="filter-select" id="filter-priority" onchange="renderTable()">
+                <option value="ALL">All Priorities</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+            </select>
+            <select class="filter-select" id="filter-stage" onchange="renderTable()">
+                <option value="ALL">All Stages</option>
+                <option value="OPEN">Stage 1: Open / Queued</option>
+                <option value="UNDER_REVIEW">Stage 2: Under Review</option>
+                <option value="IN_PROGRESS">Stage 3: In Progress</option>
+                <option value="RESOLVED">Stage 4: Resolved</option>
+                <option value="CLOSED">Closed</option>
+            </select>
+            <button class="btn btn-secondary" onclick="loadAllTickets()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+        </div>
+    </div>
+
+    <!-- Master Admin Table (Shows Student Name AND Email clearly) -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ticket #</th>
+                    <th>Student / Caller</th>
+                    <th>Subject</th>
+                    <th>Category</th>
+                    <th>Priority</th>
+                    <th>Assigned Staff</th>
+                    <th>Status</th>
+                    <th>SLA Target</th>
+                    <th>Submitted</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="tickets-tbody">
+                <tr><td colspan="10" style="text-align: center; padding: 40px; color: var(--text-muted);">Loading master ticket queue...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Admin Management Drawer -->
+    <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer(event)">
+        <div class="drawer" onclick="event.stopPropagation()">
+            <div class="drawer-header">
+                <div>
+                    <h3 id="drawer-title" style="font-size: 16px; font-weight: 700;">Ticket Console</h3>
+                    <span id="drawer-ticket-num" class="token-id" style="margin-top: 4px; display: inline-block;"></span>
+                </div>
+                <button class="btn btn-secondary" style="padding: 4px 10px;" onclick="closeDrawer(null)">&times;</button>
+            </div>
+            <div class="drawer-body">
+                <!-- Student Caller Identity Card -->
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #1e40af; text-transform: uppercase;"><i class="fa-solid fa-user-graduate"></i> Raised By Student</span>
+                    <div id="drawer-caller" style="font-size: 15px; font-weight: 800; color: var(--secondary); margin-top: 4px;">Student Name</div>
+                    <div id="drawer-email" style="font-size: 12px; color: var(--primary); font-family: monospace; margin-top: 2px;">student@example.com</div>
+                </div>
+
+                
+    </div>
+
+    <script>
+        let allTickets = [];
+
+        function cleanDisplayName(name, email) {
+            if (!name || name.trim() === '' || name.toLowerCase() === 'user' || name.toLowerCase() === 'student' || name.includes('@')) {
+                if (email && email.includes('@')) {
+                    const prefix = email.split('@')[0];
+                    return prefix.replace(/[\._0-9\-]+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase()) || 'Student';
+                }
+                return 'Student';
+            }
+            return name.trim();
+        }
+
+        let activeTicketId = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadAllTickets();
+        });
+
+        async function loadAllTickets() {
+            try {
+                const res = await fetch('/api/ticket/tickets/all');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    allTickets = data.tickets || [];
+                    updateKPIs();
+                    renderTable();
+                }
+            } catch (err) {
+                console.error("Error loading tickets:", err);
+            }
+        }
+
+        function updateKPIs() {
+            document.getElementById('kpi-total').textContent = allTickets.length;
+            document.getElementById('kpi-critical').textContent = allTickets.filter(t => t.priority === 'CRITICAL' && t.status !== 'RESOLVED' && t.status !== 'CLOSED').length;
+            document.getElementById('kpi-unassigned').textContent = allTickets.filter(t => !t.assigned_to || t.assigned_to === 'Unassigned').length;
+            document.getElementById('kpi-resolved').textContent = allTickets.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tickets-tbody');
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const priorityFilter = document.getElementById('filter-priority').value;
+            const stageFilter = document.getElementById('filter-stage').value;
+
+            const filtered = allTickets.filter(t => {
+                const matchSearch = (t.ticket_number || '').toLowerCase().includes(search) || 
+                                    (t.subject || '').toLowerCase().includes(search) ||
+                                    (t.caller_name || '').toLowerCase().includes(search) ||
+                                    (t.caller_email || t.user_id || '').toLowerCase().includes(search) ||
+                                    (t.assigned_to || '').toLowerCase().includes(search);
+                const matchPriority = priorityFilter === 'ALL' || (t.priority || '').toUpperCase() === priorityFilter;
+                const matchStage = stageFilter === 'ALL' || t.status === stageFilter;
+                return matchSearch && matchPriority && matchStage;
+            });
+
+            tbody.innerHTML = '';
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 40px; color: var(--text-muted);">No tickets matching the filters.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(t => {
+                const tr = document.createElement('tr');
+                const priority = (t.priority || 'MEDIUM').toUpperCase();
+                const status = (t.status || 'OPEN').toUpperCase();
+                const assigned = t.assigned_to || 'Unassigned';
+
+                tr.innerHTML = `
+                    <td><span class="token-id">${t.ticket_number}</span></td>
+                    <td>
+                        <strong style="color: var(--secondary);">${escapeHtml(t.caller_name || 'Student')}</strong>
+                        <div class="user-meta-sub">${escapeHtml(t.caller_email || t.user_id || '')}</div>
+                    </td>
+                    <td><strong>${escapeHtml(t.subject)}</strong></td>
+                    <td><span class="badge" style="background:#f1f5f9; color:#475569;">${escapeHtml(t.category)}</span></td>
+                    <td><span class="badge badge-${priority.toLowerCase()}">${priority}</span></td>
+                    <td>
+                        <select class="assign-select" onchange="assignStaff('${t.ticket_number}', this.value)">
+                            <option value="Unassigned" ${!assigned || assigned === 'Unassigned' ? 'selected' : ''}>Unassigned</option>
+                            <option value="Ganesh" ${assigned === 'Ganesh' ? 'selected' : ''}>Ganesh</option>
+                            <option value="Saiteja" ${assigned === 'Saiteja' ? 'selected' : ''}>Saiteja</option>
+                            <option value="Lokesh" ${assigned === 'Lokesh' ? 'selected' : ''}>Lokesh</option>
+                            <option value="Gayatri" ${assigned === 'Gayatri' ? 'selected' : ''}>Gayatri</option>
+                            <option value="Poojitha" ${assigned === 'Poojitha' ? 'selected' : ''}>Poojitha</option>
+                            <option value="Sathwika" ${assigned === 'Sathwika' ? 'selected' : ''}>Sathwika</option>
+                            <option value="Mahesh" ${assigned === 'Mahesh' ? 'selected' : ''}>Mahesh</option>
+                            <option value="Rajesh K." ${assigned.includes('Rajesh') ? 'selected' : ''}>Rajesh K. (Tier 1 Support)</option>
+                            <option value="Priya M." ${assigned.includes('Priya') ? 'selected' : ''}>Priya M. (Operations Specialist)</option>
+                            <option value="Anand V." ${assigned.includes('Anand') ? 'selected' : ''}>Anand V. (Technical Lead)</option>
+                        </select>
+                    </td>
+                    <td><span class="badge" style="background:#e0f2fe; color:#0369a1;">${status}</span></td>
+                    <td><span class="sla-pill ${priority === 'CRITICAL' ? 'sla-breached' : 'sla-urgent'}">${priority === 'CRITICAL' ? '15m SLA' : priority === 'HIGH' ? '4h SLA' : 'Standard'}</span></td>
+                    <td><span style="color: var(--text-muted); font-size: 12px;">${formatDate(t.created_at)}</span></td>
+                    <td style="text-align: right;">
+                        <button class="btn btn-secondary" style="padding: 5px 12px;" onclick="openDrawer('${t.ticket_number}')">View & Manage</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function assignStaff(ticketId, staffName) {
+            try {
+                const res = await fetch(`/api/ticket/tickets/${ticketId}/assign`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ assigned_to: staffName, assigned_by: 'Operations Desk' })
+                });
+                if (res.ok) {
+                    loadAllTickets();
+                } else {
+                    alert('Reassignment failed.');
+                }
+            } catch (err) {
+                alert('Network error: ' + err.message);
+            }
+        }
+
+        async function openDrawer(ticketId) {
+            activeTicketId = ticketId;
+            document.getElementById('drawer-ticket-num').textContent = '#' + ticketId;
+            document.getElementById('drawer-overlay').classList.add('active');
+
+            try {
+                const res = await fetch(`/api/ticket/ticket/${ticketId}`);
+                const data = await res.json();
+                if (data.status === 'success') {
+                    const t = data.ticket;
+                    document.getElementById('drawer-title').textContent = t.subject;
+                    document.getElementById('drawer-caller').textContent = cleanDisplayName(t.caller_name, t.caller_email);
+                    const drawerAssign = document.getElementById('drawer-assign-select');
+                    if (drawerAssign) drawerAssign.value = t.assigned_to || 'Unassigned';
+                    document.getElementById('drawer-email').textContent = t.caller_email || t.user_id || 'No email attached';
+                    document.getElementById('drawer-desc').textContent = t.description || 'No description provided.';
+
+                    const msgContainer = document.getElementById('drawer-messages');
+                    msgContainer.innerHTML = '';
+                    (t.comments || []).forEach(c => {
+                        const isSystem = c.author_type === 'SYSTEM';
+                        if (isSystem) {
+                            msgContainer.innerHTML += `<div class="system-audit">${escapeHtml(c.message)}</div>`;
+                        } else {
+                            const isUser = c.author_type === 'USER';
+                            msgContainer.innerHTML += `
+                                <div class="message-bubble ${isUser ? 'user-reply' : 'agent-reply'}">
+                                    <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">
+                                        ${isUser ? '👤 Student (' + escapeHtml(c.author_name || 'User') + ')' : '🛡️ ' + escapeHtml(c.author_name || 'Admin')}
+                                    </div>
+                                    <div>${escapeHtml(c.message)}</div>
+                                </div>
+                            `;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Error opening drawer:", err);
+            }
+        }
+
+        async function adminReopen() {
+            if (!activeTicketId) return;
+            const reason = prompt("Enter reason for reopening this ticket:", "Reopened by Operations Desk for further verification");
+            if (!reason) return;
+            try {
+                const res = await fetch(`/api/ticket/ticket/${activeTicketId}/reopen`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reopened_by: 'Operations Desk', reason: reason })
+                });
+                if (res.ok) {
+                    alert("Ticket successfully reopened to Stage 1 (OPEN).");
+                    openDrawer(activeTicketId);
+                    loadAllTickets();
+                } else {
+                    alert("Failed to reopen ticket.");
+                }
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        }
+
+        async function adminClose() {
+            if (!activeTicketId) return;
+            if (!confirm(`Are you sure you want to finalize and CLOSE ticket #${activeTicketId}?`)) return;
+            try {
+                const res = await fetch(`/api/ticket/ticket/${activeTicketId}/close`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ closed_by: 'Operations Desk', feedback: 'Verified and permanently closed by Admin.' })
+                });
+                if (res.ok) {
+                    alert("Ticket marked as CLOSED.");
+                    openDrawer(activeTicketId);
+                    loadAllTickets();
+                } else {
+                    alert("Failed to close ticket.");
+                }
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        }
+
+        function closeDrawer(e) {
+            if (!e || e.target === document.getElementById('drawer-overlay')) {
+                document.getElementById('drawer-overlay').classList.remove('active');
+                activeTicketId = null;
+            }
+        }
+
+        async function advanceStage(stageName) {
+            if (!activeTicketId) return;
+            try {
+                const res = await fetch(`/api/ticket/tickets/${activeTicketId}/stage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stage: stageName, updated_by: 'Operations Admin' })
+                });
+                if (res.ok) {
+                    openDrawer(activeTicketId);
+                    loadAllTickets();
+                }
+            } catch (err) {
+                alert("Stage update failed: " + err.message);
+            }
+        }
+
+        async function sendAdminUpdate() {
+            const input = document.getElementById('admin-reply-input');
+            const msg = input.value.trim();
+            if (!msg || !activeTicketId) return;
+
+            try {
+                const res = await fetch(`/api/ticket/ticket/${activeTicketId}/comment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        author_type: 'AGENT',
+                        author_name: 'Operations Admin',
+                        message: msg
+                    })
+                });
+                if (res.ok) {
+                    input.value = '';
+                    openDrawer(activeTicketId);
+                    loadAllTickets();
+                }
+            } catch (err) {
+                alert("Failed to send update: " + err.message);
+            }
+        }
+
+        function formatDate(dStr) {
+            if (!dStr) return '';
+            const d = new Date(dStr);
+            return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+</body>
+</html>
