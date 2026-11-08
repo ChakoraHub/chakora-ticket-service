@@ -14,6 +14,10 @@ spec:
     metadata:
       labels:
         app: chakora-ticket-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8025"
+        prometheus.io/path: "/metrics"
     spec:
       imagePullSecrets:
         - name: ghcr-secret
