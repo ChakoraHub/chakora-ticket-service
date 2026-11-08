@@ -114,6 +114,13 @@ app = FastAPI(
     version="2.0.0"
 )
 
+# Enable Prometheus metrics instrumentation
+try:
+    from prometheus_fastapi_instrumentator import Instrumentator
+    Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+except ImportError:
+    logger.warning("prometheus_fastapi_instrumentator not installed; /metrics endpoint disabled")
+
 # Exception handlers for clean error reporting
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
